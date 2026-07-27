@@ -115,6 +115,9 @@
   .card .ctop{display:flex;align-items:flex-start;gap:9px;margin-bottom:8px}
   .card .csig{font-size:17px;font-weight:800;color:var(--azul)}
   .nao-inst{color:var(--vermelho);font-size:13px;margin-left:6px;font-weight:800;vertical-align:2px;cursor:help}
+  .quorum-pct{font-size:13.5px;font-weight:800;white-space:nowrap;min-width:44px;text-align:right}
+  .quorum-pct.ok{color:var(--verde)}
+  .quorum-pct.bad{color:var(--vermelho)}
   .card .cnome{font-size:12.5px;color:var(--texto-2);font-weight:500}
   .card .cmeta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--texto-2);margin-top:10px}
   .card .cmeta b{color:var(--texto);font-weight:600}
@@ -431,6 +434,20 @@ function badgeQuorum(c){
   else cls=(temQ&&min>0&&q>=min)?'b-ok':'b-pend';
   return `<span class="badge ${cls}">Quórum: ${rot}</span>`;
 }
+// Percentual do quórum sobre o total de membros, exibido ao lado do campo no detalhe.
+function atualizarQuorumPct(){
+  const el=document.getElementById('quorum-pct');if(!el)return;
+  const c=dados.find(x=>x.id===editId);
+  const qRaw=document.getElementById('f-quorum').value;
+  const temQ=qRaw!==''&&qRaw!=null&&!isNaN(Number(qRaw));
+  const membros=c?totalMembros(c):0;
+  if(!temQ||membros<=0){el.textContent='';el.className='quorum-pct';return;}
+  const q=Number(qRaw);
+  const pct=Math.round((q/membros)*1000)/10;
+  const atinge=q>=quorumMinimo(membros);
+  el.textContent=pct+'%';
+  el.className='quorum-pct '+(atinge?'ok':'bad');
+}
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2200)}
 
@@ -534,7 +551,12 @@ function abrirDetalhe(id){
           <div class="membros-collapsed" id="membros-collapsed" onclick="expandMembros()"><span id="membros-count">${totalMembros(c)} ${totalMembros(c)===1?'membro':'membros'}</span><span class="mhint">clique para ver/editar</span></div>
           <textarea id="f-membrosNomes" class="membros-textarea" placeholder="Um nome por linha..." style="display:none" onblur="collapseMembros()">${esc(c.membrosNomes||'')}</textarea>
         </div>
-        <div class="fld"><label>Quórum</label><input id="f-quorum" type="number" min="0" value="${esc(c.quorum)}"></div>
+        <div class="fld"><label>Quórum</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input id="f-quorum" type="number" min="0" value="${esc(c.quorum)}" oninput="atualizarQuorumPct()" style="flex:1">
+            <span id="quorum-pct" class="quorum-pct"></span>
+          </div>
+        </div>
         <div class="fld"><label>Periodicidade</label><select id="f-periodicidade">${PERIODOS.map(p=>`<option${c.periodicidade===p?' selected':''}>${p}</option>`).join('')}</select></div>
         <div class="fld"><label>Última reunião</label><input id="f-ultimaReuniao" type="date" value="${esc(c.ultimaReuniao)}"></div>
         <div class="fld full"><label>Próxima reunião (calculada)</label><input value="${px?fmtData(px):'—'}" disabled style="background:var(--fundo)"></div>
@@ -548,6 +570,7 @@ function abrirDetalhe(id){
     </div>`;
   document.getElementById('overlay').classList.add('on');
   document.body.style.overflow='hidden';
+  atualizarQuorumPct();
   if(!isAdmin){
     const m=document.getElementById('modal');
     m.querySelectorAll('input,select,textarea,button.acchk').forEach(el=>{el.disabled=true;});
