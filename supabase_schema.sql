@@ -24,7 +24,7 @@ create table if not exists public.ncom_admins (
 
 -- Semeia os 2 editores (troque/adicione e-mails aqui quando precisar):
 insert into public.ncom_admins (email) values
-  ('satohmsvp@gmail.com'),
+  ('prikams@yahoo.com.br'),
   ('lucasaraujo74164@gmail.com')
 on conflict (email) do nothing;
 
