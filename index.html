@@ -14,6 +14,7 @@
     --verde:#2e9e5b; --verde-bg:#e4f5ea;
     --amarelo:#d69e00; --amarelo-bg:#fbf3d9;
     --vermelho:#c0392b; --vermelho-bg:#fbe6e3;
+    --rosa-bg:#fce4ec;
     --cinza:#6b7683; --cinza-bg:#eef1f4; --linha:#e2e7ee;
     --texto:#1f2b38; --texto-2:#5a6673; --fundo:#f4f7fb; --card:#ffffff;
     --sombra:0 1px 3px rgba(16,42,72,.08),0 4px 16px rgba(16,42,72,.06);
@@ -109,12 +110,13 @@
   .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:15px}
   .card{background:var(--card);border-radius:14px;box-shadow:var(--sombra);padding:16px 17px;cursor:pointer;transition:.15s;border-top:4px solid var(--cinza);position:relative}
   .card:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(16,42,72,.13)}
+  .card.nao-inst-card{background:var(--rosa-bg)}
   .card.s-ok{border-top-color:var(--verde)}
   .card.s-pend{border-top-color:var(--amarelo)}
   .card.s-atr{border-top-color:var(--vermelho)}
   .card .ctop{display:flex;align-items:flex-start;gap:9px;margin-bottom:8px}
   .card .csig{font-size:17px;font-weight:800;color:var(--azul)}
-  .nao-inst{color:var(--vermelho);font-size:13px;margin-left:6px;font-weight:800;vertical-align:2px;cursor:help}
+  .nao-inst{color:var(--vermelho);font-size:22px;margin-left:7px;font-weight:800;vertical-align:-3px;cursor:help;line-height:1}
   .quorum-pct{font-size:13.5px;font-weight:800;white-space:nowrap;min-width:44px;text-align:right}
   .quorum-pct.ok{color:var(--verde)}
   .quorum-pct.bad{color:var(--vermelho)}
@@ -504,7 +506,7 @@ function render(){
     const ab=acoesAbertas(c),tt=(c.acoes||[]).length;
     const px=proximaReuniao(c);
     const atrasoPx=reunioesAtraso(c);
-    return `<div class="card s-${classeSit(c.situacao)}" onclick="abrirDetalhe('${c.id}')">
+    return `<div class="card s-${classeSit(c.situacao)}${c.categoria==='Não instituída'?' nao-inst-card':''}" onclick="abrirDetalhe('${c.id}')">
       <div class="ctop"><div><div class="csig">${esc(c.sigla)}${c.categoria==='Não instituída'?'<span class="nao-inst" title="Não instituída">⚠</span>':''}</div><div class="cnome">${esc(c.nome)}</div></div></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">${badgeSit(c.situacao)}</div>
       <div class="cmeta">
@@ -535,7 +537,7 @@ function abrirDetalhe(id){
       </div>
       <div class="mhright">
         <button class="mclose" onclick="fechar()">✕</button>
-        <select class="cat-sel" id="f-categoria" title="Categoria"><option${c.categoria==='Instituída'?' selected':''}>Instituída</option><option${c.categoria==='Não instituída'?' selected':''}>Não instituída</option></select>
+        <select class="cat-sel" id="f-categoria" title="Categoria" onchange="categoriaAoMudar()"><option${c.categoria==='Instituída'?' selected':''}>Instituída</option><option${c.categoria==='Não instituída'?' selected':''}>Não instituída</option></select>
       </div>
     </div>
     <div class="mbody">
@@ -546,6 +548,7 @@ function abrirDetalhe(id){
       <h4>🏛️ Dados da comissão</h4>
       <div class="fgrid">
         <div class="fld"><label>Situação geral</label><select id="f-situacao">${SITUACOES.map(s=>`<option${c.situacao===s?' selected':''}>${s}</option>`).join('')}</select></div>
+        ${c.categoria==='Não instituída'?'':`
         <div class="fld"><label>Status da ata</label><select id="f-ataStatus">${['Entregue','Pendente','Atrasado'].map(s=>`<option${c.ataStatus===s?' selected':''}>${s}</option>`).join('')}</select></div>
         <div class="fld"><label>Presidente</label><input id="f-presidente" value="${esc(c.presidente)}"></div>
         <div class="fld"><label>Vice-presidente</label><input id="f-vice" value="${esc(c.vice)}"></div>
@@ -570,7 +573,7 @@ function abrirDetalhe(id){
         </div>
         <div class="fld"><label>Periodicidade</label><select id="f-periodicidade">${PERIODOS.map(p=>`<option${c.periodicidade===p?' selected':''}>${p}</option>`).join('')}</select></div>
         <div class="fld"><label>Última reunião</label><input id="f-ultimaReuniao" type="date" value="${esc(c.ultimaReuniao)}"></div>
-        <div class="fld full"><label>Próxima reunião (calculada)</label><input value="${px?fmtData(px):'—'}" disabled style="background:var(--fundo)"></div>
+        <div class="fld full"><label>Próxima reunião (calculada)</label><input value="${px?fmtData(px):'—'}" disabled style="background:var(--fundo)"></div>`}
         <div class="fld full"><label>Observações</label><textarea id="f-observacao">${esc(c.observacao)}</textarea></div>
       </div>
     </div>
@@ -645,17 +648,25 @@ function delAcao(aid){
   if(!c.acoes.length)document.getElementById('aclist').innerHTML=`<div class="empty"><div class="em">📝</div>Nenhuma ação cadastrada.</div>`;
 }
 
+// Enquanto não instituída, o formulário oculta os campos operacionais (ainda não fazem
+// sentido). g() ignora silenciosamente os que não existem no DOM nesse momento.
 function salvarDetalhe(){
   if(!isAdmin)return;
   const c=dados.find(x=>x.id===editId);if(!c)return;
-  const g=id=>document.getElementById(id).value;
-  c.categoria=g('f-categoria');
-  c.situacao=g('f-situacao');c.ataStatus=g('f-ataStatus');
-  c.presidente=g('f-presidente');c.vice=g('f-vice');
-  c.membrosNomes=g('f-membrosNomes');c.quorum=g('f-quorum');c.convidados=g('f-convidados');
-  c.periodicidade=g('f-periodicidade');c.ultimaReuniao=g('f-ultimaReuniao');
-  c.observacao=g('f-observacao');
+  const g=id=>{const el=document.getElementById(id);return el?el.value:undefined};
+  const set=(campo,val)=>{if(val!==undefined)c[campo]=val};
+  set('categoria',g('f-categoria'));
+  set('situacao',g('f-situacao'));set('ataStatus',g('f-ataStatus'));
+  set('presidente',g('f-presidente'));set('vice',g('f-vice'));
+  set('membrosNomes',g('f-membrosNomes'));set('quorum',g('f-quorum'));set('convidados',g('f-convidados'));
+  set('periodicidade',g('f-periodicidade'));set('ultimaReuniao',g('f-ultimaReuniao'));
+  set('observacao',g('f-observacao'));
   salvar();fechar();toast('Alterações salvas ✔');
+}
+function categoriaAoMudar(){
+  const c=dados.find(x=>x.id===editId);if(!c)return;
+  c.categoria=document.getElementById('f-categoria').value;
+  abrirDetalhe(c.id);
 }
 function expandMembros(){
   document.getElementById('membros-collapsed').style.display='none';
