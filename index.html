@@ -14,7 +14,7 @@
     --verde:#2e9e5b; --verde-bg:#e4f5ea;
     --amarelo:#d69e00; --amarelo-bg:#fbf3d9;
     --vermelho:#c0392b; --vermelho-bg:#fbe6e3;
-    --rosa-bg:#fce4ec;
+    --rosa:#c2185b; --rosa-bg:#fce4ec;
     --cinza:#6b7683; --cinza-bg:#eef1f4; --linha:#e2e7ee;
     --texto:#1f2b38; --texto-2:#5a6673; --fundo:#f4f7fb; --card:#ffffff;
     --sombra:0 1px 3px rgba(16,42,72,.08),0 4px 16px rgba(16,42,72,.06);
@@ -75,6 +75,7 @@
   .kpi.atr{border-color:var(--vermelho)} .kpi.atr .n{color:var(--vermelho)}
   .kpi.tot{border-color:var(--azul)} .kpi.tot .n{color:var(--azul)}
   .kpi.acoes{border-color:var(--azul-claro)} .kpi.acoes .n{color:var(--azul-claro)}
+  .kpi.naoinst{border-color:var(--rosa)} .kpi.naoinst .n{color:var(--rosa)}
 
   .grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;align-items:start}
   @media(max-width:860px){.grid2{grid-template-columns:1fr}}
@@ -468,12 +469,14 @@ function renderPainel(){
   const ok=dados.filter(c=>c.situacao==='OK').length;
   const pend=dados.filter(c=>c.situacao==='Pendente').length;
   const atr=dados.filter(c=>c.situacao==='Atraso').length;
+  const naoInst=dados.filter(c=>c.categoria==='Não instituída').length;
   const acoesTot=dados.reduce((s,c)=>s+acoesAbertas(c),0);
   document.getElementById('kpis').innerHTML=`
     <div class="kpi tot"><div class="n">${tot}</div><div class="l">Núcleos / Comissões</div></div>
     <div class="kpi ok"><div class="n">${ok}</div><div class="l">Situação OK</div></div>
     <div class="kpi pend"><div class="n">${pend}</div><div class="l">Pendentes</div></div>
     <div class="kpi atr"><div class="n">${atr}</div><div class="l">Em atraso</div></div>
+    <div class="kpi naoinst"><div class="n">${naoInst}</div><div class="l">Não instituídas</div></div>
     <div class="kpi acoes"><div class="n">${acoesTot}</div><div class="l">Ações em aberto</div></div>`;
 
   const cores={OK:'var(--verde)',Pendente:'var(--amarelo)',Atraso:'var(--vermelho)'};
