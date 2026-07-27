@@ -132,6 +132,14 @@
   /* Modal */
   .overlay{position:fixed;inset:0;background:rgba(16,32,54,.55);z-index:50;display:none;align-items:flex-start;justify-content:center;padding:30px 16px;overflow:auto}
   .overlay.on{display:flex}
+  .pick-ov{position:fixed;inset:0;background:rgba(16,32,54,.55);z-index:70;display:none;align-items:center;justify-content:center;padding:20px}
+  .pick-ov.on{display:flex}
+  .pick-card{background:var(--card);border-radius:16px;padding:22px 20px;width:100%;max-width:360px;box-shadow:0 18px 50px rgba(0,0,0,.3);animation:pop .18s ease}
+  .pick-card h3{font-size:16px;font-weight:800;color:var(--azul);margin-bottom:14px}
+  .pick-opt{display:block;width:100%;text-align:left;padding:11px 14px;border-radius:10px;border:1px solid var(--linha);background:var(--fundo);font-size:13.5px;font-weight:600;color:var(--texto);margin-bottom:8px;transition:.15s}
+  .pick-opt:hover{background:var(--azul-bg);border-color:var(--azul);color:var(--azul)}
+  .pick-cancel{width:100%;text-align:center;padding:9px;margin-top:2px;font-size:12.5px;color:var(--texto-2);font-weight:600}
+  .pick-cancel:hover{color:var(--texto)}
   .modal{background:var(--card);border-radius:16px;width:100%;max-width:760px;box-shadow:0 12px 48px rgba(0,0,0,.3);animation:pop .18s ease}
   @keyframes pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
   .mhead{padding:18px 22px;border-bottom:1px solid var(--linha);display:flex;align-items:flex-start;gap:12px;position:sticky;top:0;background:var(--card);border-radius:16px 16px 0 0;z-index:2}
@@ -289,6 +297,15 @@
   <div class="modal" id="modal"></div>
 </div>
 
+<!-- ESCOLHA DO TIPO DE AÇÃO -->
+<div class="pick-ov" id="acaoPickOverlay">
+  <div class="pick-card">
+    <h3>Nova ação</h3>
+    <div id="acaoPickList"></div>
+    <button class="pick-cancel" onclick="fecharPickAcao()">Cancelar</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -296,6 +313,7 @@ const STORE='nucleosComissoes_v1';
 const STATUS_ACAO=['Pendente','Em andamento','Concluída'];
 const PERIODOS=['Em branco','Mensal','Bimestral','Trimestral','Semestral','Anual'];
 const SITUACOES=['OK','Pendente','Atraso'];
+const ACOES_PADRAO=['Melhorar quórum','Reunião em atraso','Entregar ata','Coletar assinatura','Revisão da Portaria','Revisão do Regimento'];
 
 let dados=[];
 let editId=null;
@@ -564,8 +582,22 @@ function toggleAcao(aid){if(!isAdmin)return;const a=acaoAtual(aid);if(!a)return;
 function reRenderAcao(aid){const el=document.querySelector(`[data-aid="${aid}"]`);const a=acaoAtual(aid);if(el&&a)el.outerHTML=acaoHtml(a)}
 function addAcao(){
   if(!isAdmin)return;
+  const list=document.getElementById('acaoPickList');
+  list.innerHTML=ACOES_PADRAO.map(t=>`<button class="pick-opt" data-texto="${esc(t)}" onclick="escolherAcao(this.dataset.texto)">${esc(t)}</button>`).join('')
+    +`<button class="pick-opt" onclick="escolherAcaoOutros()">Outros...</button>`;
+  document.getElementById('acaoPickOverlay').classList.add('on');
+}
+function fecharPickAcao(){document.getElementById('acaoPickOverlay').classList.remove('on')}
+function escolherAcao(texto){fecharPickAcao();criarAcao(texto)}
+function escolherAcaoOutros(){
+  fecharPickAcao();
+  const texto=(prompt('Descreva a ação:','')||'').trim();
+  if(!texto)return;
+  criarAcao(texto);
+}
+function criarAcao(texto){
   const c=dados.find(x=>x.id===editId);if(!c)return;
-  c.acoes=c.acoes||[];c.acoes.push({id:uid(),texto:'Nova ação',status:'Pendente',responsavel:'',prazo:'',solicitadoEm:hoje(),obs:'',criadoEm:hoje()});
+  c.acoes=c.acoes||[];c.acoes.push({id:uid(),texto,status:'Pendente',responsavel:'',prazo:'',solicitadoEm:hoje(),obs:'',criadoEm:hoje()});
   salvar();
   const box=document.getElementById('aclist');
   if(box.querySelector('.empty'))box.innerHTML='';
@@ -627,6 +659,7 @@ function fechar(){
   render();renderPainel();
 }
 document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')fechar()});
+document.getElementById('acaoPickOverlay').addEventListener('click',e=>{if(e.target.id==='acaoPickOverlay')fecharPickAcao()});
 
 /* ---------- Backup ---------- */
 function exportar(){
