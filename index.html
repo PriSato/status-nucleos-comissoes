@@ -511,7 +511,7 @@ function render(){
         <span>Presidente: <b>${esc(c.presidente||'—')}</b></span>
         <span>Periodicidade: <b>${esc(c.periodicidade||'—')}</b></span>
         <span>Última reunião: <b>${fmtData(c.ultimaReuniao)}</b></span>
-        <span>Próxima: <b${atrasoPx?' class="px-atraso"':''}>${px?fmtData(px):'—'}</b></span>
+        <span>Próxima: <b${atrasoPx?' class="px-atraso"':''}>${px?fmtData(px):'—'}</b>${atrasoPx?' <b class="px-atraso">(Em atraso)</b>':''}</span>
       </div>
       <div class="cfoot">
         ${badgeQuorum(c)}
