@@ -54,6 +54,8 @@
   .login-card .btn{width:100%;justify-content:center;margin-top:4px}
   .login-card .btn.ghost{margin-top:9px}
   .lg-erro{font-size:12.5px;font-weight:600;min-height:18px;margin-bottom:6px;color:var(--vermelho)}
+  .lg-fp{margin-top:14px;font-size:12.5px}
+  .lg-fp a{color:var(--azul-claro);font-weight:600;text-decoration:underline}
 
   main{max-width:1240px;margin:0 auto;padding:22px}
 
@@ -200,6 +202,18 @@
     <div class="lg-erro" id="lgErro"></div>
     <button class="btn" id="lgEntrar" onclick="fazerLogin()">Entrar</button>
     <button class="btn ghost" id="lgCriar" onclick="criarConta()">Criar conta</button>
+    <div class="lg-fp" id="lgFp"><a href="#" onclick="event.preventDefault();esqueciSenha()">Esqueci minha senha</a></div>
+  </div>
+</div>
+<div class="login-ov" id="resetOverlay">
+  <div class="login-card">
+    <img class="login-logo" id="resetLogo" alt="Hospital Maternidade São Vicente de Paulo">
+    <h2>Nova senha</h2>
+    <p class="login-sub" id="resetSub">Defina uma nova senha para sua conta</p>
+    <input id="rsSenha" type="password" placeholder="Nova senha (mín. 6 caracteres)" autocomplete="new-password">
+    <input id="rsSenha2" type="password" placeholder="Confirme a nova senha" autocomplete="new-password" onkeydown="if(event.key==='Enter')definirNovaSenha()">
+    <div class="lg-erro" id="rsErro"></div>
+    <button class="btn" id="rsSalvar" onclick="definirNovaSenha()">Salvar nova senha</button>
   </div>
 </div>
 <header>
@@ -668,6 +682,28 @@ async function criarConta(){
   if(data.session)entrarApp(data.user);
   else loginErro('Conta criada! Agora faça login.',true);
 }
+async function esqueciSenha(){
+  const email=(document.getElementById('lgEmail').value||'').trim();
+  if(!email)return loginErro('Digite seu e-mail no campo acima e clique em "Esqueci minha senha" de novo.');
+  loginBusy(true);loginErro('');
+  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.href.split('#')[0]});
+  loginBusy(false);
+  if(error)return loginErro(traduzErro(error.message));
+  loginErro('Link de redefinição enviado para '+email+'. Confira o e-mail (e o spam).',true);
+}
+function resetErro(msg,ok){const el=document.getElementById('rsErro');el.textContent=msg;el.style.color=ok?'var(--verde)':'var(--vermelho)';}
+async function definirNovaSenha(){
+  const s1=document.getElementById('rsSenha').value, s2=document.getElementById('rsSenha2').value;
+  if(s1.length<6)return resetErro('A senha precisa de ao menos 6 caracteres.');
+  if(s1!==s2)return resetErro('As senhas não coincidem.');
+  document.getElementById('rsSalvar').disabled=true;resetErro('');
+  const {data,error}=await sb.auth.updateUser({password:s1});
+  document.getElementById('rsSalvar').disabled=false;
+  if(error)return resetErro(traduzErro(error.message));
+  document.getElementById('resetOverlay').classList.remove('on');
+  history.replaceState(null,'',location.pathname+location.search);
+  entrarApp(data.user);
+}
 async function sair(){await sb.auth.signOut();location.reload();}
 async function entrarApp(user){
   currentUser=user;
@@ -685,8 +721,22 @@ function aplicarPermissoes(){
   const info=document.getElementById('userInfo');
   if(info&&currentUser)info.innerHTML=`<span class="uemail">${esc(currentUser.email)}</span><span class="urole">${isAdmin?'Editor':'Somente leitura'}</span>`;
 }
+let modoRecuperacao=false;
 async function iniciarAuth(){
-  document.getElementById('loginLogo').src=document.querySelector('.head-logo').src;
+  const logoSrc=document.querySelector('.head-logo').src;
+  document.getElementById('loginLogo').src=logoSrc;
+  document.getElementById('resetLogo').src=logoSrc;
+  // Link de "esqueci minha senha": o Supabase abre esta página com um evento
+  // PASSWORD_RECOVERY antes de qualquer outra coisa — precisa ser pego aqui.
+  sb.auth.onAuthStateChange((event)=>{
+    if(event==='PASSWORD_RECOVERY'){
+      modoRecuperacao=true;
+      document.getElementById('loginOverlay').classList.remove('on');
+      document.getElementById('resetOverlay').classList.add('on');
+    }
+  });
+  await new Promise(r=>setTimeout(r,150)); // dá tempo do evento acima disparar, se houver
+  if(modoRecuperacao)return;
   const {data:{session}}=await sb.auth.getSession();
   if(session&&session.user)entrarApp(session.user);
   else document.getElementById('loginOverlay').classList.add('on');
