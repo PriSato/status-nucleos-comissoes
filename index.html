@@ -551,10 +551,19 @@ function abrirDetalhe(id){
           <div class="membros-collapsed" id="membros-collapsed" onclick="expandMembros()"><span id="membros-count">${totalMembros(c)} ${totalMembros(c)===1?'membro':'membros'}</span><span class="mhint">clique para ver/editar</span></div>
           <textarea id="f-membrosNomes" class="membros-textarea" placeholder="Um nome por linha..." style="display:none" onblur="collapseMembros()">${esc(c.membrosNomes||'')}</textarea>
         </div>
-        <div class="fld"><label>Quórum</label>
-          <div style="display:flex;align-items:center;gap:8px">
-            <input id="f-quorum" type="number" min="0" value="${esc(c.quorum)}" oninput="atualizarQuorumPct()" style="flex:1">
-            <span id="quorum-pct" class="quorum-pct"></span>
+        <div class="fld full">
+          <div style="display:flex;gap:14px;flex-wrap:wrap">
+            <div class="fld" style="flex:1;min-width:140px">
+              <label>Quórum</label>
+              <div style="display:flex;align-items:center;gap:8px">
+                <input id="f-quorum" type="number" min="0" value="${esc(c.quorum)}" oninput="atualizarQuorumPct()" style="flex:1">
+                <span id="quorum-pct" class="quorum-pct"></span>
+              </div>
+            </div>
+            <div class="fld" style="flex:1;min-width:120px">
+              <label>Convidados</label>
+              <input id="f-convidados" type="number" min="0" value="${esc(c.convidados)}">
+            </div>
           </div>
         </div>
         <div class="fld"><label>Periodicidade</label><select id="f-periodicidade">${PERIODOS.map(p=>`<option${c.periodicidade===p?' selected':''}>${p}</option>`).join('')}</select></div>
@@ -641,7 +650,7 @@ function salvarDetalhe(){
   c.categoria=g('f-categoria');
   c.situacao=g('f-situacao');c.ataStatus=g('f-ataStatus');
   c.presidente=g('f-presidente');c.vice=g('f-vice');
-  c.membrosNomes=g('f-membrosNomes');c.quorum=g('f-quorum');
+  c.membrosNomes=g('f-membrosNomes');c.quorum=g('f-quorum');c.convidados=g('f-convidados');
   c.periodicidade=g('f-periodicidade');c.ultimaReuniao=g('f-ultimaReuniao');
   c.observacao=g('f-observacao');
   salvar();fechar();toast('Alterações salvas ✔');
@@ -673,7 +682,7 @@ function abrirNovo(){
   if(sigla===null||sigla==='')return;
   const nome=(prompt('Nome completo do núcleo/comissão:','')||'').trim();
   if(nome==='')return;
-  const nova={id:uid(),sigla,nome,categoria:'Instituída',situacao:'Pendente',presidente:'',vice:'',membros:'',quorum:'',periodicidade:'Em branco',ultimaReuniao:'',ataStatus:'Pendente',legislacao:'',observacao:'',acoes:[]};
+  const nova={id:uid(),sigla,nome,categoria:'Instituída',situacao:'Pendente',presidente:'',vice:'',membros:'',quorum:'',convidados:'',periodicidade:'Em branco',ultimaReuniao:'',ataStatus:'Pendente',legislacao:'',observacao:'',acoes:[]};
   dados.push(nova);salvar();abrirDetalhe(nova.id);
 }
 function fechar(){
