@@ -121,6 +121,7 @@
   .card .cnome{font-size:12.5px;color:var(--texto-2);font-weight:500}
   .card .cmeta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--texto-2);margin-top:10px}
   .card .cmeta b{color:var(--texto);font-weight:600}
+  .card .cmeta b.px-atraso{color:var(--vermelho);font-weight:800}
   .card .cfoot{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid var(--linha)}
 
   .badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap}
@@ -502,6 +503,7 @@ function render(){
   cont.innerHTML=lista.map(c=>{
     const ab=acoesAbertas(c),tt=(c.acoes||[]).length;
     const px=proximaReuniao(c);
+    const atrasoPx=reunioesAtraso(c);
     return `<div class="card s-${classeSit(c.situacao)}" onclick="abrirDetalhe('${c.id}')">
       <div class="ctop"><div><div class="csig">${esc(c.sigla)}${c.categoria==='Não instituída'?'<span class="nao-inst" title="Não instituída">⚠</span>':''}</div><div class="cnome">${esc(c.nome)}</div></div></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">${badgeSit(c.situacao)}</div>
@@ -509,7 +511,7 @@ function render(){
         <span>Presidente: <b>${esc(c.presidente||'—')}</b></span>
         <span>Periodicidade: <b>${esc(c.periodicidade||'—')}</b></span>
         <span>Última reunião: <b>${fmtData(c.ultimaReuniao)}</b></span>
-        <span>Próxima: <b>${px?fmtData(px):'—'}</b></span>
+        <span>Próxima: <b${atrasoPx?' class="px-atraso"':''}>${px?fmtData(px):'—'}</b></span>
       </div>
       <div class="cfoot">
         ${badgeQuorum(c)}
