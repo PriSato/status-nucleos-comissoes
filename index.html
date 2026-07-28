@@ -107,25 +107,30 @@
   .btn.danger{background:var(--vermelho)}
   .btn.verde{background:var(--verde)}
 
-  /* Cards lista */
-  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:15px}
-  .card{background:var(--card);border-radius:14px;box-shadow:var(--sombra);padding:16px 17px;cursor:pointer;transition:.15s;border-top:4px solid var(--cinza);position:relative}
-  .card:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(16,42,72,.13)}
+  /* Lista de núcleos/comissões (uma linha por item) */
+  .cards{display:flex;flex-direction:column;gap:10px}
+  .card{background:var(--card);border-radius:12px;box-shadow:var(--sombra);padding:13px 18px;cursor:pointer;transition:.15s;border-left:5px solid var(--cinza);position:relative;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .card:hover{transform:translateX(3px);box-shadow:0 6px 22px rgba(16,42,72,.13)}
   .card.nao-inst-card{background:var(--rosa-bg)}
-  .card.s-ok{border-top-color:var(--verde)}
-  .card.s-pend{border-top-color:var(--amarelo)}
-  .card.s-atr{border-top-color:var(--vermelho)}
-  .card .ctop{display:flex;align-items:flex-start;gap:9px;margin-bottom:8px}
-  .card .csig{font-size:17px;font-weight:800;color:var(--azul)}
+  .card.s-ok{border-left-color:var(--verde)}
+  .card.s-pend{border-left-color:var(--amarelo)}
+  .card.s-atr{border-left-color:var(--vermelho)}
+  .card .ctop{display:flex;align-items:flex-start;gap:9px;flex:1 1 210px;min-width:190px}
+  .card .csig{font-size:16px;font-weight:800;color:var(--azul)}
   .nao-inst{color:var(--vermelho);font-size:22px;margin-left:7px;font-weight:800;vertical-align:-3px;cursor:help;line-height:1}
   .quorum-pct{font-size:13.5px;font-weight:800;white-space:nowrap;min-width:44px;text-align:right}
   .quorum-pct.ok{color:var(--verde)}
   .quorum-pct.bad{color:var(--vermelho)}
-  .card .cnome{font-size:12.5px;color:var(--texto-2);font-weight:500}
-  .card .cmeta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--texto-2);margin-top:10px}
+  .card .cnome{font-size:12px;color:var(--texto-2);font-weight:500}
+  .card .csit{flex:0 0 auto}
+  .card .cmeta{display:flex;flex-wrap:wrap;gap:5px 16px;font-size:12px;color:var(--texto-2);flex:2 1 320px}
   .card .cmeta b{color:var(--texto);font-weight:600}
   .card .cmeta b.px-atraso{color:var(--vermelho);font-weight:800}
-  .card .cfoot{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid var(--linha)}
+  .card .cfoot{display:flex;align-items:center;gap:8px;flex:1 1 250px;justify-content:flex-end;border-left:1px solid var(--linha);padding-left:14px}
+  @media(max-width:760px){
+    .card{align-items:stretch}
+    .card .cfoot{justify-content:flex-start;border-left:none;padding-left:0;border-top:1px solid var(--linha);padding-top:10px}
+  }
 
   .badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap}
   .b-ok{background:var(--verde-bg);color:var(--verde)}
@@ -504,14 +509,14 @@ function render(){
     return true;
   });
   const cont=document.getElementById('cards');
-  if(!lista.length){cont.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="em">🔍</div>Nenhum resultado.</div>`;return}
+  if(!lista.length){cont.innerHTML=`<div class="empty"><div class="em">🔍</div>Nenhum resultado.</div>`;return}
   cont.innerHTML=lista.map(c=>{
     const ab=acoesAbertas(c),tt=(c.acoes||[]).length;
     const px=proximaReuniao(c);
     const atrasoPx=reunioesAtraso(c);
     return `<div class="card s-${classeSit(c.situacao)}${c.categoria==='Não instituída'?' nao-inst-card':''}" onclick="abrirDetalhe('${c.id}')">
       <div class="ctop"><div><div class="csig">${esc(c.sigla)}${c.categoria==='Não instituída'?'<span class="nao-inst" title="Não instituída">⚠</span>':''}</div><div class="cnome">${esc(c.nome)}</div></div></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">${badgeSit(c.situacao)}</div>
+      <div class="csit">${badgeSit(c.situacao)}</div>
       <div class="cmeta">
         <span>Presidente: <b>${esc(c.presidente||'—')}</b></span>
         <span>Periodicidade: <b>${esc(c.periodicidade||'—')}</b></span>
