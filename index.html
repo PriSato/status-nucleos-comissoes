@@ -498,6 +498,22 @@ function renderPainel(){
 }
 
 /* ---------- Lista ---------- */
+// Ordem de exibição: 1) OK sem ações · 2) OK com ações (crescente) · 3) Atraso · 4) Pendente · 5) Não instituída (inativos), por último sempre.
+function grupoOrdem(c){
+  if(c.categoria==='Não instituída')return 5;
+  if(c.situacao==='OK')return acoesAbertas(c)===0?1:2;
+  if(c.situacao==='Atraso')return 3;
+  if(c.situacao==='Pendente')return 4;
+  return 6;
+}
+function ordenarLista(lista){
+  return lista.slice().sort((a,b)=>{
+    const ga=grupoOrdem(a),gb=grupoOrdem(b);
+    if(ga!==gb)return ga-gb;
+    if(ga===2)return acoesAbertas(a)-acoesAbertas(b);
+    return 0;
+  });
+}
 function render(){
   const q=(document.getElementById('busca').value||'').toLowerCase().trim();
   const fcat=document.getElementById('fcat').value;
@@ -508,6 +524,7 @@ function render(){
     if(q&&!(c.sigla+' '+c.nome).toLowerCase().includes(q))return false;
     return true;
   });
+  lista=ordenarLista(lista);
   const cont=document.getElementById('cards');
   if(!lista.length){cont.innerHTML=`<div class="empty"><div class="em">🔍</div>Nenhum resultado.</div>`;return}
   cont.innerHTML=lista.map(c=>{
