@@ -429,6 +429,15 @@ function reunioesAtraso(c){
 function acoesAbertas(c){return (c.acoes||[]).filter(a=>a.status!=='Concluída').length}
 function classeSit(s){return s==='OK'?'ok':s==='Pendente'?'pend':'atr'}
 function badgeSit(s){return `<span class="badge b-${classeSit(s)}">${esc(s)}</span>`}
+// Situação calculada automaticamente (não há mais campo para escolher à mão).
+// Atraso: reunião vencida ou ata atrasada · Pendente: ata pendente · OK: em dia.
+// Ações em aberto não afetam a situação — elas entram só na ordenação da lista.
+function situacaoDe(c){
+  if(c.categoria==='Não instituída')return 'Pendente';
+  if(reunioesAtraso(c)||c.ataStatus==='Atrasado')return 'Atraso';
+  if(c.ataStatus==='Pendente')return 'Pendente';
+  return 'OK';
+}
 // Nomes dos membros (um por linha). O total é o nº de nomes; se ainda não houver nomes, usa o número antigo salvo.
 function nomesMembros(c){return (c.membrosNomes||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean)}
 function totalMembros(c){const n=nomesMembros(c).length;return n>0?n:(Number(c.membros)||0)}
@@ -471,9 +480,9 @@ function mostrar(v){
 /* ---------- Painel ---------- */
 function renderPainel(){
   const tot=dados.length;
-  const ok=dados.filter(c=>c.situacao==='OK').length;
-  const pend=dados.filter(c=>c.situacao==='Pendente').length;
-  const atr=dados.filter(c=>c.situacao==='Atraso').length;
+  const ok=dados.filter(c=>situacaoDe(c)==='OK').length;
+  const pend=dados.filter(c=>situacaoDe(c)==='Pendente').length;
+  const atr=dados.filter(c=>situacaoDe(c)==='Atraso').length;
   const naoInst=dados.filter(c=>c.categoria==='Não instituída').length;
   const acoesTot=dados.reduce((s,c)=>s+acoesAbertas(c),0);
   document.getElementById('kpis').innerHTML=`
@@ -486,7 +495,7 @@ function renderPainel(){
 
   const cores={OK:'var(--verde)',Pendente:'var(--amarelo)',Atraso:'var(--vermelho)'};
   document.getElementById('bars').innerHTML=SITUACOES.map(s=>{
-    const q=dados.filter(c=>c.situacao===s).length;
+    const q=dados.filter(c=>situacaoDe(c)===s).length;
     const pct=tot?Math.round(q/tot*100):0;
     return `<div class="barrow"><span class="lab">${s}</span><div class="track"><div class="fill" style="width:${pct}%;background:${cores[s]}"></div></div><span class="v">${q}</span></div>`;
   }).join('');
@@ -501,9 +510,10 @@ function renderPainel(){
 // Ordem de exibição: 1) OK sem ações · 2) OK com ações (crescente) · 3) Atraso · 4) Pendente · 5) Não instituída (inativos), por último sempre.
 function grupoOrdem(c){
   if(c.categoria==='Não instituída')return 5;
-  if(c.situacao==='OK')return acoesAbertas(c)===0?1:2;
-  if(c.situacao==='Atraso')return 3;
-  if(c.situacao==='Pendente')return 4;
+  const s=situacaoDe(c);
+  if(s==='OK')return acoesAbertas(c)===0?1:2;
+  if(s==='Atraso')return 3;
+  if(s==='Pendente')return 4;
   return 6;
 }
 function ordenarLista(lista){
@@ -520,7 +530,7 @@ function render(){
   const fsit=document.getElementById('fsit').value;
   let lista=dados.filter(c=>{
     if(fcat&&c.categoria!==fcat)return false;
-    if(fsit&&c.situacao!==fsit)return false;
+    if(fsit&&situacaoDe(c)!==fsit)return false;
     if(q&&!(c.sigla+' '+c.nome).toLowerCase().includes(q))return false;
     return true;
   });
@@ -531,9 +541,10 @@ function render(){
     const ab=acoesAbertas(c),tt=(c.acoes||[]).length;
     const px=proximaReuniao(c);
     const atrasoPx=reunioesAtraso(c);
-    return `<div class="card s-${classeSit(c.situacao)}${c.categoria==='Não instituída'?' nao-inst-card':''}" onclick="abrirDetalhe('${c.id}')">
+    const sit=situacaoDe(c);
+    return `<div class="card s-${classeSit(sit)}${c.categoria==='Não instituída'?' nao-inst-card':''}" onclick="abrirDetalhe('${c.id}')">
       <div class="ctop"><div><div class="csig">${esc(c.sigla)}${c.categoria==='Não instituída'?'<span class="nao-inst" title="Não instituída">⚠</span>':''}</div><div class="cnome">${esc(c.nome)}</div></div></div>
-      <div class="csit">${badgeSit(c.situacao)}</div>
+      <div class="csit">${badgeSit(sit)}</div>
       <div class="cmeta">
         <span>Presidente: <b>${esc(c.presidente||'—')}</b></span>
         <span>Periodicidade: <b>${esc(c.periodicidade||'—')}</b></span>
@@ -557,7 +568,7 @@ function abrirDetalhe(id){
   document.getElementById('modal').innerHTML=`
     <div class="mhead">
       <div class="mt"><h2>${esc(c.sigla)}</h2><div class="msub">${esc(c.nome)}</div>
-        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">${badgeSit(c.situacao)}${atraso?`<span class="badge b-atr">⚠ Reunião em atraso</span>`:''}</div>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">${badgeSit(situacaoDe(c))}${atraso?`<span class="badge b-atr">⚠ Reunião em atraso</span>`:''}</div>
         ${c.legislacao?`<div class="mleg"><span class="mleg-lb">📜 Legislação base</span><span class="mleg-tx">${esc(c.legislacao)}</span></div>`:''}
       </div>
       <div class="mhright">
@@ -572,15 +583,9 @@ function abrirDetalhe(id){
 
       <h4>🏛️ Dados da comissão</h4>
       <div class="fgrid">
-        <div class="fld"><label>Situação geral</label><select id="f-situacao">${SITUACOES.map(s=>`<option${c.situacao===s?' selected':''}>${s}</option>`).join('')}</select></div>
         ${c.categoria==='Não instituída'?'':`
+        <div class="fld"><label>Última reunião</label><input id="f-ultimaReuniao" type="date" value="${esc(c.ultimaReuniao)}"></div>
         <div class="fld"><label>Status da ata</label><select id="f-ataStatus">${['Entregue','Pendente','Atrasado'].map(s=>`<option${c.ataStatus===s?' selected':''}>${s}</option>`).join('')}</select></div>
-        <div class="fld"><label>Presidente</label><input id="f-presidente" value="${esc(c.presidente)}"></div>
-        <div class="fld"><label>Vice-presidente</label><input id="f-vice" value="${esc(c.vice)}"></div>
-        <div class="fld"><label>Membros</label>
-          <div class="membros-collapsed" id="membros-collapsed" onclick="expandMembros()"><span id="membros-count">${totalMembros(c)} ${totalMembros(c)===1?'membro':'membros'}</span><span class="mhint">clique para ver/editar</span></div>
-          <textarea id="f-membrosNomes" class="membros-textarea" placeholder="Um nome por linha..." style="display:none" onblur="collapseMembros()">${esc(c.membrosNomes||'')}</textarea>
-        </div>
         <div class="fld full">
           <div style="display:flex;gap:14px;flex-wrap:wrap">
             <div class="fld" style="flex:1;min-width:140px">
@@ -596,8 +601,13 @@ function abrirDetalhe(id){
             </div>
           </div>
         </div>
+        <div class="fld"><label>Presidente</label><input id="f-presidente" value="${esc(c.presidente)}"></div>
+        <div class="fld"><label>Vice-presidente</label><input id="f-vice" value="${esc(c.vice)}"></div>
+        <div class="fld"><label>Membros</label>
+          <div class="membros-collapsed" id="membros-collapsed" onclick="expandMembros()"><span id="membros-count">${totalMembros(c)} ${totalMembros(c)===1?'membro':'membros'}</span><span class="mhint">clique para ver/editar</span></div>
+          <textarea id="f-membrosNomes" class="membros-textarea" placeholder="Um nome por linha..." style="display:none" onblur="collapseMembros()">${esc(c.membrosNomes||'')}</textarea>
+        </div>
         <div class="fld"><label>Periodicidade</label><select id="f-periodicidade">${PERIODOS.map(p=>`<option${c.periodicidade===p?' selected':''}>${p}</option>`).join('')}</select></div>
-        <div class="fld"><label>Última reunião</label><input id="f-ultimaReuniao" type="date" value="${esc(c.ultimaReuniao)}"></div>
         <div class="fld full"><label>Próxima reunião (calculada)</label><input value="${px?fmtData(px):'—'}" disabled style="background:var(--fundo)"></div>`}
         <div class="fld full"><label>Observações</label><textarea id="f-observacao">${esc(c.observacao)}</textarea></div>
       </div>
@@ -681,7 +691,7 @@ function salvarDetalhe(){
   const g=id=>{const el=document.getElementById(id);return el?el.value:undefined};
   const set=(campo,val)=>{if(val!==undefined)c[campo]=val};
   set('categoria',g('f-categoria'));
-  set('situacao',g('f-situacao'));set('ataStatus',g('f-ataStatus'));
+  set('ataStatus',g('f-ataStatus')); // situação não é mais editável: ver situacaoDe()
   set('presidente',g('f-presidente'));set('vice',g('f-vice'));
   set('membrosNomes',g('f-membrosNomes'));set('quorum',g('f-quorum'));set('convidados',g('f-convidados'));
   set('periodicidade',g('f-periodicidade'));set('ultimaReuniao',g('f-ultimaReuniao'));
