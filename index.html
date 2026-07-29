@@ -351,7 +351,7 @@ function seed(){
   {sigla:'CPR',nome:'Comissão de Proteção Radiológica',categoria:'Instituída',situacao:'Pendente',presidente:'',vice:'',membros:'',quorum:'',periodicidade:'Bimestral',ultimaReuniao:'',ataStatus:'Pendente',legislacao:'RDC nº 611/2022 e RDC nº 330/2019',observacao:'Depende da alta gestão.',acoes:[A('Entrega da Portaria, Regimento, Cronograma e Atas de reunião','Pendente','','Alta gestão')]},
   {sigla:'CRO',nome:'Comissão Interna de Revisão de Óbitos',categoria:'Instituída',situacao:'OK',presidente:'Thales Anibal (Med.)',vice:'Gustavo Cândido (Med.)',membros:6,membrosNomes:'Thales Anibal\nGustavo Cândido\nLucas\nÍtalo\nAdriano\nExpedita',quorum:4,periodicidade:'Mensal',ultimaReuniao:'2026-07-09',ataStatus:'Entregue',legislacao:'Resolução CFM nº 2.171/2017',observacao:'',acoes:[]},
   {sigla:'CRP',nome:'Comissão de Revisão de Prontuários',categoria:'Instituída',situacao:'Atraso',presidente:'Amanda Bandeira (Med.)',vice:'Débora Albuquerque (Med.)',membros:8,membrosNomes:'Amanda\nDébora\nMabel\nLeonardo Sampaio\nHelson\nAna Paula\nJosé Gilmar\nCíntia',quorum:'',periodicidade:'Mensal',ultimaReuniao:'2026-07-10',ataStatus:'Pendente',legislacao:'Resolução CFM nº 1.638/2002 e Resolução CFM nº 2.171/2017',observacao:'',acoes:[A('Realizar reunião (em atraso)','Pendente','','Reunião prevista para 10/07/26')]},
-  {sigla:'CT',nome:'Comitê Transfusional',categoria:'Instituída',situacao:'Pendente',presidente:'Pedro Bruno (Med.)',vice:'Ana Jéssica (Biomed.)',membros:10,membrosNomes:'Pedro Bruno\nAna Jéssica\nIzaqueu\nThiago\nElaine\nMeline\nJamile\nMabel\nZuilane\nNeumiran',quorum:'',periodicidade:'Trimestral',ultimaReuniao:'2026-06-19',ataStatus:'Atrasado',legislacao:'Portaria MS nº 158/2016, Portaria de Consolidação Nº 5/2017 e RDC ANVISA nº 34/2014',observacao:'',acoes:[A('Entrega das atas assinadas','Pendente','2026-07-07',''),A('Entrega dos documentos com assinatura da direção','Pendente','2026-07-07','')]},
+  {sigla:'CT',nome:'Comitê Transfusional',categoria:'Instituída',situacao:'Pendente',presidente:'Pedro Bruno (Med.)',vice:'Ana Jéssica (Biomed.)',membros:10,membrosNomes:'Pedro Bruno\nAna Jéssica\nIzaqueu\nThiago\nElaine\nMeline\nJamile\nMabel\nZuilane\nNeumiran',quorum:'',periodicidade:'Trimestral',ultimaReuniao:'2026-06-19',ataStatus:'Pendente',legislacao:'Portaria MS nº 158/2016, Portaria de Consolidação Nº 5/2017 e RDC ANVISA nº 34/2014',observacao:'',acoes:[A('Entrega das atas assinadas','Pendente','2026-07-07',''),A('Entrega dos documentos com assinatura da direção','Pendente','2026-07-07','')]},
   {sigla:'CTAH',nome:'Comissão de Terapia Antineoplásica Hospitalar',categoria:'Instituída',situacao:'Atraso',presidente:'Cícero Samuel (Med.)',vice:'João Armando (Med.)',membros:8,membrosNomes:'Cícero Samuel\nJoão Armando\nTainá Araújo\nAndrea\nNeumiran\nThainá\nRoseane\nCícera Suelen',quorum:'',periodicidade:'Trimestral',ultimaReuniao:'2026-07-14',ataStatus:'Pendente',legislacao:'RDC Anvisa nº 220, de 21/09/2004 e RDC Anvisa nº 50/2002',observacao:'Próxima reunião prevista 14/07.',acoes:[A('Realizar reunião (em atraso)','Pendente','','Reunião prevista para 14/07/26')]},
   {sigla:'E-DOT',nome:'Equipe Hospitalar de Doação para Transplantes',categoria:'Instituída',situacao:'Pendente',presidente:'Thiago Chaves (Enf.)',vice:'Thales Anibal (Med.)',membros:'',quorum:'',periodicidade:'Bimestral',ultimaReuniao:'',ataStatus:'Pendente',legislacao:'Portaria nº 1.752/2005 e Portaria nº 2.600/2009',observacao:'',acoes:[A('Entrega da Portaria, Regimento, Cronograma e Atas de reunião','Pendente','2026-07-03','')]},
   {sigla:'CEM',nome:'Comissão de Ética Médica',categoria:'Não instituída',situacao:'Pendente',presidente:'',vice:'',membros:'',quorum:'',periodicidade:'Em branco',ultimaReuniao:'',ataStatus:'Pendente',legislacao:'',observacao:'Depende da alta gestão.',acoes:[A('Implantação da comissão','Pendente','','Alta gestão')]}
@@ -411,6 +411,8 @@ function migrar(){
     if(s.nome&&c.nome!==s.nome){c.nome=s.nome;mudou=true;}
     if((s.legislacao||'')!==(c.legislacao||'')){c.legislacao=s.legislacao;mudou=true;}
   });
+  // 4) "Atrasado" saiu das opções de status da ata: vira "Pendente"
+  dados.forEach(c=>{if(c.ataStatus==='Atrasado'){c.ataStatus='Pendente';mudou=true;}});
   return mudou;
 }
 function fmtData(iso){if(!iso)return '—';const[y,m,d]=iso.split('-');return `${d}/${m}/${y}`}
@@ -585,7 +587,7 @@ function abrirDetalhe(id){
       <div class="fgrid">
         ${c.categoria==='Não instituída'?'':`
         <div class="fld"><label>Última reunião</label><input id="f-ultimaReuniao" type="date" value="${esc(c.ultimaReuniao)}"></div>
-        <div class="fld"><label>Status da ata</label><select id="f-ataStatus">${['Entregue','Pendente','Atrasado'].map(s=>`<option${c.ataStatus===s?' selected':''}>${s}</option>`).join('')}</select></div>
+        <div class="fld"><label>Status da ata</label><select id="f-ataStatus">${['Entregue','Pendente'].map(s=>`<option${c.ataStatus===s?' selected':''}>${s}</option>`).join('')}</select></div>
         <div class="fld full">
           <div style="display:flex;gap:14px;flex-wrap:wrap">
             <div class="fld" style="flex:1;min-width:140px">
