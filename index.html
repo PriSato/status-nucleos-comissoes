@@ -197,6 +197,8 @@
   .iconbtn:hover{background:var(--card);color:var(--azul)}
   .iconbtn.del:hover{color:var(--vermelho)}
   .st-sel{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px;border:1px solid var(--linha);background:#fff}
+  .resp-sel{font-size:11.5px;font-weight:600;color:var(--texto);border:none;background:transparent;max-width:190px;cursor:pointer}
+  .resp-sel:hover{color:var(--azul)}
 
   .empty{text-align:center;padding:34px 16px;color:var(--texto-2)}
   .empty .em{font-size:34px;margin-bottom:8px;opacity:.6}
@@ -555,7 +557,7 @@ function render(){
       </div>
       <div class="cfoot">
         ${badgeQuorum(c)}
-        <span class="badge b-${c.ataStatus==='Entregue'?'ok':c.ataStatus==='Atrasado'?'atr':'pend'}">Ata: ${esc(c.ataStatus)}</span>
+        <span class="badge b-${c.ataStatus==='Entregue'?'ok':'atr'}">Ata: ${esc(c.ataStatus)}</span>
         <span class="pill-acoes">${tt?`Ações: <b>${ab}</b> abertas / ${tt}`:'Sem ações'}</span>
       </div>
     </div>`;
@@ -587,7 +589,7 @@ function abrirDetalhe(id){
       <div class="fgrid">
         ${c.categoria==='Não instituída'?'':`
         <div class="fld"><label>Última reunião</label><input id="f-ultimaReuniao" type="date" value="${esc(c.ultimaReuniao)}"></div>
-        <div class="fld"><label>Status da ata</label><select id="f-ataStatus">${['Entregue','Pendente'].map(s=>`<option${c.ataStatus===s?' selected':''}>${s}</option>`).join('')}</select></div>
+        <div class="fld"><label>Status da ata</label><select id="f-ataStatus" onchange="ataStatusAoMudar()">${['Entregue','Pendente'].map(s=>`<option${c.ataStatus===s?' selected':''}>${s}</option>`).join('')}</select></div>
         <div class="fld full">
           <div style="display:flex;gap:14px;flex-wrap:wrap">
             <div class="fld" style="flex:1;min-width:140px">
@@ -642,7 +644,7 @@ function acaoHtml(a){
       </div>
     </div>
     <div class="acmeta">
-      <span>👤 <input value="${esc(a.responsavel)}" placeholder="Responsável" style="border:none;background:transparent;font-size:11.5px;font-weight:600" onchange="editAcaoCampo('${a.id}','responsavel',this.value)"></span>
+      <span>👤 <select class="resp-sel" onchange="respAoMudar('${a.id}',this.value,this)">${opcoesResponsavel(a)}</select></span>
       <span>📌 Solicitado: <input type="date" value="${esc(a.solicitadoEm)}" style="border:none;background:transparent;font-size:11.5px" onchange="editAcaoCampo('${a.id}','solicitadoEm',this.value)"></span>
       <span>⏰ Prazo: <input type="date" value="${esc(a.prazo)}" style="border:none;background:transparent;font-size:11.5px" onchange="editAcaoCampo('${a.id}','prazo',this.value)"></span>
     </div>
@@ -650,6 +652,28 @@ function acaoHtml(a){
   </div>`;
 }
 
+// Responsável: lista suspensa com os membros do núcleo/comissão. Mantém um nome já
+// gravado que não esteja mais na lista e permite digitar outro via "Outro…".
+function opcoesResponsavel(a){
+  const c=dados.find(x=>x.id===editId);
+  const lista=c?nomesMembros(c):[];
+  const atual=a.responsavel||'';
+  if(atual&&!lista.includes(atual))lista.unshift(atual);
+  return `<option value=""${atual===''?' selected':''}>— Responsável —</option>`
+    +lista.map(n=>`<option${n===atual?' selected':''}>${esc(n)}</option>`).join('')
+    +`<option value="__outro__">Outro…</option>`;
+}
+function respAoMudar(aid,val,sel){
+  const a=acaoAtual(aid);
+  if(val==='__outro__'){
+    const nome=(prompt('Nome do responsável:','')||'').trim();
+    if(!nome){sel.value=a?(a.responsavel||''):'';return}
+    editAcaoCampo(aid,'responsavel',nome);
+    reRenderAcao(aid);
+    return;
+  }
+  editAcaoCampo(aid,'responsavel',val);
+}
 function acaoAtual(aid){const c=dados.find(x=>x.id===editId);return c&&(c.acoes||[]).find(a=>a.id===aid)}
 function editAcaoCampo(aid,campo,val){if(!isAdmin)return;const a=acaoAtual(aid);if(a){a[campo]=val;salvar();if(campo==='status')reRenderAcao(aid)}}
 function toggleAcao(aid){if(!isAdmin)return;const a=acaoAtual(aid);if(!a)return;a.status=a.status==='Concluída'?'Pendente':'Concluída';a.concluidoEm=a.status==='Concluída'?hoje():'';salvar();reRenderAcao(aid)}
@@ -704,6 +728,17 @@ function categoriaAoMudar(){
   const c=dados.find(x=>x.id===editId);if(!c)return;
   c.categoria=document.getElementById('f-categoria').value;
   abrirDetalhe(c.id);
+}
+// Ata marcada como pendente já abre a ação de cobrança correspondente.
+function ataStatusAoMudar(){
+  if(!isAdmin)return;
+  const c=dados.find(x=>x.id===editId);if(!c)return;
+  c.ataStatus=document.getElementById('f-ataStatus').value;
+  if(c.ataStatus!=='Pendente')return;
+  const jaTem=(c.acoes||[]).some(a=>a.texto==='Entregar ata'&&a.status!=='Concluída');
+  if(jaTem)return;
+  criarAcao('Entregar ata');
+  toast('Ação "Entregar ata" criada ✔');
 }
 function expandMembros(){
   document.getElementById('membros-collapsed').style.display='none';
