@@ -595,7 +595,7 @@ function abrirDetalhe(id){
             <div class="fld" style="flex:1;min-width:140px">
               <label>Quórum</label>
               <div style="display:flex;align-items:center;gap:8px">
-                <input id="f-quorum" type="number" min="0" value="${esc(c.quorum)}" oninput="atualizarQuorumPct()" style="flex:1">
+                <input id="f-quorum" type="number" min="0" value="${esc(c.quorum)}" oninput="atualizarQuorumPct()" onchange="quorumAoMudar()" style="flex:1">
                 <span id="quorum-pct" class="quorum-pct"></span>
               </div>
             </div>
@@ -739,6 +739,23 @@ function ataStatusAoMudar(){
   if(jaTem)return;
   criarAcao('Entregar ata');
   toast('Ação "Entregar ata" criada ✔');
+}
+// Quórum de 50% ou menos dos membros já abre a ação de melhoria correspondente.
+function quorumAoMudar(){
+  if(!isAdmin)return;
+  const c=dados.find(x=>x.id===editId);if(!c)return;
+  const val=document.getElementById('f-quorum').value;
+  c.quorum=val;
+  salvar();
+  const temQ=val!==''&&val!=null&&!isNaN(Number(val));
+  const membros=totalMembros(c);
+  if(!temQ||membros<=0)return;
+  const pct=(Number(val)/membros)*100;
+  if(pct>50)return;
+  const jaTem=(c.acoes||[]).some(a=>a.texto==='Melhorar quórum'&&a.status!=='Concluída');
+  if(jaTem)return;
+  criarAcao('Melhorar quórum');
+  toast('Ação "Melhorar quórum" criada ✔');
 }
 function expandMembros(){
   document.getElementById('membros-collapsed').style.display='none';
