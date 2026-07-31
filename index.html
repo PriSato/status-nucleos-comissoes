@@ -445,16 +445,15 @@ function situacaoDe(c){
 // Nomes dos membros (um por linha). O total é o nº de nomes; se ainda não houver nomes, usa o número antigo salvo.
 function nomesMembros(c){return (c.membrosNomes||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean)}
 function totalMembros(c){const n=nomesMembros(c).length;return n>0?n:(Number(c.membros)||0)}
-// Maioria simples = metade dos membros + 1. Verde se o quórum atinge, amarelo se não; vermelho se a ata não foi entregue.
+// Maioria simples = metade dos membros + 1 (>50%). Só duas cores: verde se o quórum
+// atinge o percentual, vermelho se não atinge (ou não há dado) — sem amarelo.
 function quorumMinimo(m){m=Number(m);return m>0?Math.floor(m/2)+1:0}
 function badgeQuorum(c){
   const temQ=c.quorum!==''&&c.quorum!=null&&!isNaN(Number(c.quorum));
   const q=Number(c.quorum),min=quorumMinimo(totalMembros(c));
   const rot=temQ?q:'—';
-  let cls;
-  if(c.ataStatus!=='Entregue')cls='b-atr';
-  else cls=(temQ&&min>0&&q>=min)?'b-ok':'b-pend';
-  return `<span class="badge ${cls}">Quórum: ${rot}</span>`;
+  const atinge=temQ&&min>0&&q>=min;
+  return `<span class="badge ${atinge?'b-ok':'b-atr'}">Quórum: ${rot}</span>`;
 }
 // Percentual do quórum sobre o total de membros, exibido ao lado do campo no detalhe.
 function atualizarQuorumPct(){
