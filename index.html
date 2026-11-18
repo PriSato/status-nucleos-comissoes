@@ -95,6 +95,11 @@
   .lmrow:hover{background:var(--azul-bg)}
   .lmrow .sig{font-weight:700;color:var(--azul)}
   .lmrow .qt{margin-left:auto;font-weight:700;background:var(--vermelho-bg);color:var(--vermelho);padding:2px 9px;border-radius:20px;font-size:12px}
+  .lmrow .lm-nome{color:var(--texto-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+  .lmrow .dt{font-weight:800;white-space:nowrap}
+  .lmrow .dt small{font-weight:600;color:var(--texto-2);text-transform:uppercase;font-size:10px;margin-left:3px}
+  .lmrow .rel{font-size:11px;font-weight:700;color:var(--azul);background:#fff;padding:2px 9px;border-radius:20px;white-space:nowrap}
+  .col-esq{display:flex;flex-direction:column;gap:18px;min-width:0}
 
   /* Filtros */
   .filtros{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
@@ -298,13 +303,19 @@
     </div>
     <div class="kpis" id="kpis"></div>
     <div class="grid2">
-      <div class="panel">
-        <h3>📈 Situação geral</h3>
-        <div class="bars" id="bars"></div>
-        <div class="legenda">
-          <span><i class="dot" style="background:var(--verde)"></i> OK</span>
-          <span><i class="dot" style="background:var(--amarelo)"></i> Pendente</span>
-          <span><i class="dot" style="background:var(--vermelho)"></i> Atraso</span>
+      <div class="col-esq">
+        <div class="panel">
+          <h3>📈 Situação geral</h3>
+          <div class="bars" id="bars"></div>
+          <div class="legenda">
+            <span><i class="dot" style="background:var(--verde)"></i> OK</span>
+            <span><i class="dot" style="background:var(--amarelo)"></i> Pendente</span>
+            <span><i class="dot" style="background:var(--vermelho)"></i> Atraso</span>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>📆 Próximas reuniões</h3>
+          <div class="listmini" id="proxlist"></div>
         </div>
       </div>
       <div class="panel">
@@ -638,6 +649,18 @@ function renderPainel(){
     const pct=tot?Math.round(q/tot*100):0;
     return `<div class="barrow"><span class="lab">${s}</span><div class="track"><div class="fill" style="width:${pct}%;background:${cores[s]}"></div></div><span class="v">${q}</span></div>`;
   }).join('');
+
+  // Só as 5 próximas reuniões do Calendário (de hoje em diante), de qualquer núcleo/comissão.
+  const hojeIso=hoje(),futuras=[];
+  dados.forEach(c=>(c.reunioes||[]).forEach(d=>{if(d>=hojeIso)futuras.push({c,d})}));
+  futuras.sort((a,b)=>a.d.localeCompare(b.d)||a.c.sigla.localeCompare(b.c.sigla,'pt'));
+  document.getElementById('proxlist').innerHTML=futuras.length?futuras.slice(0,5).map(({c,d})=>{
+    const [y,m,dd]=d.split('-').map(Number);
+    const dias=Math.round((new Date(y,m-1,dd)-new Date(hojeIso+'T00:00:00'))/86400000);
+    const rel=dias===0?'hoje':dias===1?'amanhã':`em ${dias} dias`;
+    return `<div class="lmrow" onclick="abrirDetalhe('${esc(c.id)}')"><span class="sig">${esc(c.sigla)}</span><span class="lm-nome">${esc(c.nome)}</span>`
+      +`<span class="dt">${pad2(dd)}/${pad2(m)}<small>${DIAS_SEM[new Date(y,m-1,dd).getDay()]}</small></span><span class="rel">${rel}</span></div>`;
+  }).join(''):`<div class="empty"><div class="em">📆</div>Nenhuma reunião futura no calendário.</div>`;
 
   const comAcoes=dados.map(c=>({c,n:acoesAbertas(c)})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
   document.getElementById('pendlist').innerHTML=comAcoes.length?comAcoes.map(({c,n})=>
