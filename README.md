@@ -18,8 +18,12 @@ build step; é servido como está).
 - **Detalhe** de cada núcleo/comissão: lista de ações/pendências (com
   status, responsável, datas e observação), dados do cadastro, membros
   (nomes um por linha, contagem automática) e legislação base.
-- Selo de **quórum** colorido (verde = atinge maioria simples; amarelo =
-  não atinge; vermelho = ata pendente).
+- Selo de **quórum** verde (atinge a maioria simples, >50% dos membros) ou
+  vermelho (não atinge).
+- **Calendário** de reuniões: os editores cadastram à mão as datas de cada
+  núcleo/comissão. A **Próxima reunião** é a primeira data do calendário
+  posterior à "Última reunião" registrada; se já passou, aparece "(Em atraso)".
+  A periodicidade é só informativa (não há cálculo automático de datas).
 - **Backup** (exportar) e **Importar** em JSON.
 
 ## Papéis de acesso
