@@ -99,6 +99,8 @@
   .lmrow .dt{font-weight:800;white-space:nowrap}
   .lmrow .dt small{font-weight:600;color:var(--texto-2);text-transform:uppercase;font-size:10px;margin-left:3px}
   .lmrow .rel{font-size:11px;font-weight:700;color:var(--azul);background:#fff;padding:2px 9px;border-radius:20px;white-space:nowrap}
+  .lmrow.prox{flex-wrap:wrap}
+  .lmrow .lm-info{flex:0 0 100%;font-size:11.5px;font-weight:600;color:var(--texto-2)}
   .col-esq{display:flex;flex-direction:column;gap:18px;min-width:0}
 
   /* Filtros */
@@ -113,9 +115,12 @@
   .btn.verde{background:var(--verde)}
 
   /* Calendário de reuniões */
-  .cal-add{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-  .cal-add select,.cal-add input[type=date]{padding:10px 12px;border:1px solid var(--linha);border-radius:9px;background:var(--card);color:var(--texto)}
-  .cal-add select{flex:1;min-width:220px}
+  .cal-add{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .cal-f{display:flex;flex-direction:column;gap:3px;font-size:11.5px;font-weight:600;color:var(--texto-2)}
+  .cal-f-com{flex:1.2;min-width:220px}
+  .cal-f-local{flex:1;min-width:180px}
+  .cal-add select,.cal-add input[type=date],.cal-add input[type=time],.cal-add input[type=text]{padding:10px 12px;border:1px solid var(--linha);border-radius:9px;background:var(--card);color:var(--texto);font-size:14px;font-weight:400}
+  .cal-f-com select,.cal-f-local input{width:100%}
   .cal-dica{font-size:12px;color:var(--texto-2);margin-top:10px;line-height:1.45}
   .cal-nav{display:flex;align-items:center;gap:8px;margin-bottom:12px}
   .cal-nav strong{flex:1;text-align:center;font-size:15px}
@@ -132,7 +137,8 @@
   .cal-chip{font-size:10px;font-weight:700;padding:1px 5px;border-radius:5px;background:var(--azul-bg);color:var(--azul);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .cal-chip.atr{background:var(--vermelho-bg);color:var(--vermelho)}
   .cal-mais{font-size:10px;color:var(--texto-2);font-weight:600}
-  .cal-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;background:var(--fundo);font-size:13px}
+  .cal-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:9px 11px;border-radius:9px;background:var(--fundo);font-size:13px}
+  .cal-info{flex:0 0 100%;font-size:11.5px;font-weight:600;color:var(--texto-2);padding-left:88px}
   .cal-row .d{font-weight:800;min-width:78px;white-space:nowrap}
   .cal-row .d small{font-weight:600;color:var(--texto-2);text-transform:uppercase;margin-left:4px;font-size:10px}
   .cal-row .sig{font-weight:700;color:var(--azul)}
@@ -350,11 +356,13 @@
     <div class="panel admin-only" style="margin-bottom:18px">
       <h3>📆 Agendar reunião</h3>
       <div class="cal-add">
-        <select id="calCom"></select>
-        <input type="date" id="calData">
+        <label class="cal-f cal-f-com">Núcleo / Comissão<select id="calCom" onchange="calLimparInfo()"></select></label>
+        <label class="cal-f">Data<input type="date" id="calData"></label>
+        <label class="cal-f">Horário<input type="time" id="calHora"></label>
+        <label class="cal-f cal-f-local">Local da reunião<input type="text" id="calLocal" placeholder="Ex.: Sala de reuniões" maxlength="80"></label>
         <button class="btn" onclick="addReuniao()">＋ Adicionar data</button>
       </div>
-      <div class="cal-dica">Dica: clique num dia do calendário para preencher a data. A data cadastrada passa a ser a "Próxima reunião" do núcleo/comissão (a primeira data depois da última reunião registrada).</div>
+      <div class="cal-dica">Dica: clique num dia do calendário para preencher a data. Horário e local são opcionais. A data cadastrada passa a ser a "Próxima reunião" do núcleo/comissão (a primeira data depois da última reunião registrada). Para corrigir horário ou local de uma data já cadastrada, adicione a mesma data de novo.</div>
     </div>
     <div class="grid2">
       <div class="panel">
@@ -557,6 +565,16 @@ const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agos
 const DIAS_SEM=['dom','seg','ter','qua','qui','sex','sáb'];
 let calAno=new Date().getFullYear(), calMes=new Date().getMonth(), calSel='';
 function pad2(n){return String(n).padStart(2,'0')}
+// Horário e local ficam à parte, por data: c.reunioesInfo = {'AAAA-MM-DD': {hora:'14:00', local:'Sala X'}}.
+// Assim c.reunioes continua sendo só a lista de datas (compatível com o que já foi cadastrado).
+function infoReuniao(c,data){const i=(c.reunioesInfo||{})[data]||{};return {hora:i.hora||'',local:i.local||''}}
+function infoReuniaoHtml(c,data){
+  const {hora,local}=infoReuniao(c,data),p=[];
+  if(hora)p.push('🕒 '+esc(hora));
+  if(local)p.push('📍 '+esc(local));
+  return p.join(' &nbsp;·&nbsp; ');
+}
+function calLimparInfo(){document.getElementById('calHora').value='';document.getElementById('calLocal').value=''}
 function calMover(delta){
   calMes+=delta;
   if(calMes<0){calMes=11;calAno--}else if(calMes>11){calMes=0;calAno++}
@@ -597,33 +615,40 @@ function renderCalendario(){
 
   document.getElementById('calLista').innerHTML=reus.length?reus.map(({c,data})=>{
     const [y,m,d]=data.split('-').map(Number);
-    const prox=proximaReuniao(c)===data,atr=emAtraso(c,data);
+    const prox=proximaReuniao(c)===data,atr=emAtraso(c,data),info=infoReuniaoHtml(c,data);
     return `<div class="cal-row"><span class="d">${pad2(d)}/${pad2(m)}<small>${DIAS_SEM[new Date(y,m-1,d).getDay()]}</small></span>`
       +`<span class="sig">${esc(c.sigla)}</span><span class="nm" title="${esc(c.nome)}">${esc(c.nome)}</span>`
       +(atr?'<span class="badge b-atr">Em atraso</span>':prox?'<span class="badge b-inst">Próxima</span>':'')
-      +`<button class="iconbtn del admin-only" title="Remover esta data" onclick="delReuniao('${esc(c.id)}','${data}')">🗑</button></div>`;
+      +`<button class="iconbtn del admin-only" title="Remover esta data" onclick="delReuniao('${esc(c.id)}','${data}')">🗑</button>`
+      +(info?`<span class="cal-info">${info}</span>`:'')+`</div>`;
   }).join(''):'<div class="cal-vazio">Nenhuma reunião cadastrada neste mês.</div>';
 }
 function addReuniao(){
   if(!isAdmin)return;
   const id=document.getElementById('calCom').value,data=document.getElementById('calData').value;
+  const hora=document.getElementById('calHora').value,local=document.getElementById('calLocal').value.trim();
   if(!id){toast('Escolha o núcleo/comissão');return}
   if(!/^\d{4}-\d{2}-\d{2}$/.test(data)){toast('Escolha a data da reunião');return}
   const c=dados.find(x=>x.id===id);if(!c)return;
   c.reunioes=c.reunioes||[];
-  if(c.reunioes.includes(data)){toast('Essa data já está no calendário');return}
-  c.reunioes.push(data);c.reunioes.sort();
+  const existe=c.reunioes.includes(data);
+  // Data repetida sem horário/local novos não muda nada; com eles, atualiza a reunião existente.
+  if(existe&&!hora&&!local){toast('Essa data já está no calendário');return}
+  if(!existe){c.reunioes.push(data);c.reunioes.sort()}
+  c.reunioesInfo=c.reunioesInfo||{};
+  if(hora||local)c.reunioesInfo[data]={hora,local};
   salvar();
-  // mostra o mês da data cadastrada e deixa o núcleo/comissão selecionado para a próxima data
+  // mostra o mês da data cadastrada; núcleo/comissão, horário e local ficam para facilitar a próxima data
   calAno=Number(data.slice(0,4));calMes=Number(data.slice(5,7))-1;calSel='';
   document.getElementById('calData').value='';
   renderCalendario();
-  toast(`${c.sigla}: reunião em ${fmtData(data)} adicionada ✔`);
+  toast(existe?`${c.sigla}: reunião de ${fmtData(data)} atualizada ✔`:`${c.sigla}: reunião em ${fmtData(data)} adicionada ✔`);
 }
 function delReuniao(id,data){
   if(!isAdmin)return;
   const c=dados.find(x=>x.id===id);if(!c)return;
   c.reunioes=(c.reunioes||[]).filter(d=>d!==data);
+  if(c.reunioesInfo)delete c.reunioesInfo[data];
   salvar();renderCalendario();toast('Data removida');
 }
 
@@ -658,8 +683,10 @@ function renderPainel(){
     const [y,m,dd]=d.split('-').map(Number);
     const dias=Math.round((new Date(y,m-1,dd)-new Date(hojeIso+'T00:00:00'))/86400000);
     const rel=dias===0?'hoje':dias===1?'amanhã':`em ${dias} dias`;
-    return `<div class="lmrow" onclick="abrirDetalhe('${esc(c.id)}')"><span class="sig">${esc(c.sigla)}</span><span class="lm-nome">${esc(c.nome)}</span>`
-      +`<span class="dt">${pad2(dd)}/${pad2(m)}<small>${DIAS_SEM[new Date(y,m-1,dd).getDay()]}</small></span><span class="rel">${rel}</span></div>`;
+    const info=infoReuniaoHtml(c,d);
+    return `<div class="lmrow prox" onclick="abrirDetalhe('${esc(c.id)}')"><span class="sig">${esc(c.sigla)}</span><span class="lm-nome">${esc(c.nome)}</span>`
+      +`<span class="dt">${pad2(dd)}/${pad2(m)}<small>${DIAS_SEM[new Date(y,m-1,dd).getDay()]}</small></span><span class="rel">${rel}</span>`
+      +(info?`<span class="lm-info">${info}</span>`:'')+`</div>`;
   }).join(''):`<div class="empty"><div class="em">📆</div>Nenhuma reunião futura no calendário.</div>`;
 
   const comAcoes=dados.map(c=>({c,n:acoesAbertas(c)})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
@@ -770,7 +797,7 @@ function abrirDetalhe(id){
           <textarea id="f-membrosNomes" class="membros-textarea" placeholder="Um nome por linha..." style="display:none" onblur="collapseMembros()">${esc(c.membrosNomes||'')}</textarea>
         </div>
         <div class="fld"><label>Periodicidade</label><select id="f-periodicidade">${PERIODOS.map(p=>`<option${c.periodicidade===p?' selected':''}>${p}</option>`).join('')}</select></div>
-        <div class="fld full"><label>Próxima reunião (definida no Calendário)</label><input value="${px?fmtData(px):'Sem data no calendário'}" disabled style="background:var(--fundo)"></div>`}
+        <div class="fld full"><label>Próxima reunião (definida no Calendário)</label><input value="${esc(px?fmtData(px)+(infoReuniao(c,px).hora?' às '+infoReuniao(c,px).hora:'')+(infoReuniao(c,px).local?' — '+infoReuniao(c,px).local:''):'Sem data no calendário')}" disabled style="background:var(--fundo)"></div>`}
         <div class="fld full"><label>Observações</label><textarea id="f-observacao">${esc(c.observacao)}</textarea></div>
       </div>
     </div>
